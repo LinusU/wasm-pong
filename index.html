@@ -1,6 +1,18 @@
+<head>
+<style>
+  body {
+    background-color: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+</style>
 <body>
 <script type="text/javascript">
   const codeToIntMap = new Map([
+    ['Space', 32],
+    ['Digit1', 49],
+    ['Digit2', 50],
     ['KeyA', 65],
     ['KeyK', 75],
     ['KeyL', 76],
@@ -11,7 +23,7 @@
   ])
 
   async function main () {
-    let canvas, ctx
+    let canvas, ctx, linearMemory
 
     const pressedKeys = new Set()
 
@@ -19,6 +31,15 @@
     document.body.addEventListener('keyup', (ev) => pressedKeys.delete(codeToIntMap.get(ev.code) || 0))
 
     const env = {
+      random () {
+        return Math.random()
+      },
+      cos (x) {
+        return Math.cos(x)
+      },
+      sin (x) {
+        return Math.sin(x)
+      },
       create_canvas (width, height) {
         canvas = document.createElement('canvas')
 
@@ -35,8 +56,20 @@
         ctx.globalAlpha = (style >>> 24)
         ctx.fillStyle = '#' + (style & 0xffffff).toString(16).padEnd(6, '0')
       },
+      set_font (id, fontPtr, fontLen) {
+        const raw = new Uint8Array(linearMemory.buffer, fontPtr, fontLen)
+        const decoder = new TextDecoder('utf-8')
+
+        ctx.font = decoder.decode(raw)
+      },
       canvas_fill_rect (id, x, y, w, h) {
         ctx.fillRect(x, y, w, h)
+      },
+      canvas_fill_text (id, textPtr, textLen, x, y) {
+        const raw = new Uint8Array(linearMemory.buffer, textPtr, textLen)
+        const decoder = new TextDecoder('utf-8')
+
+        ctx.fillText(decoder.decode(raw), x, y)
       },
       keyboard_is_pressed (key) {
         return pressedKeys.has(key)
@@ -46,6 +79,8 @@
     const response = await fetch('pong.wasm')
     const bytes = await response.arrayBuffer()
     const results = await WebAssembly.instantiate(bytes, { env })
+
+    linearMemory = results.instance.exports.memory
 
     const rust = results.instance.exports
     const state = rust.init()

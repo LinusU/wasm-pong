@@ -13,28 +13,25 @@ impl Entity {
         self.y += self.dy * dt;
     }
 
-    pub fn bounce_inside_box(&mut self) {
-        let right = (640 - self.w) as f64;
-        let bottom = (480 - self.h) as f64;
+    pub fn clamp_vertical(&mut self, min: f64, max: f64) {
+        let height = self.h as f64;
 
-        if self.x < 0.0 && self.dx < 0.0 {
-            self.x = 0.0;
-            self.dx *= -1.0;
+        if self.y < min { self.y = min }
+        if self.y + height > max { self.y = max - height }
+    }
+
+    pub fn bounce_vertical(&mut self, min: f64, max: f64) {
+        let height = self.h as f64;
+        let bottom = self.y + height;
+
+        if self.y < min && self.dy < 0.0 {
+            self.y = min + (min - self.y);
+            self.dy = -self.dy;
         }
 
-        if self.x > right && self.dx > 0.0 {
-            self.x = right;
-            self.dx *= -1.0;
-        }
-
-        if self.y < 0.0 && self.dy < 0.0 {
-            self.y = 0.0;
-            self.dy *= -1.0;
-        }
-
-        if self.y > bottom && self.dy > 0.0 {
-            self.y = bottom;
-            self.dy *= -1.0;
+        if bottom > max && self.dy > 0.0 {
+            self.y = max + (max - bottom) - height;
+            self.dy = -self.dy;
         }
     }
 

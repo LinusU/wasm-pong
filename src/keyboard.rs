@@ -6,6 +6,9 @@ mod js {
 
 #[allow(dead_code)]
 pub enum Key {
+    Space = 32,
+    Digit1 = 49,
+    Digit2 = 50,
     KeyA = 65,
     KeyK = 75,
     KeyL = 76,
