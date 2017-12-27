@@ -1,0 +1,6 @@
+[package]
+name = "pong"
+version = "0.1.0"
+authors = ["Linus Unnebäck <linus@folkdatorn.se>"]
+
+[dependencies]

@@ -1,0 +1,75 @@
+<body>
+<script type="text/javascript">
+  const codeToIntMap = new Map([
+    ['KeyA', 65],
+    ['KeyK', 75],
+    ['KeyL', 76],
+    ['KeyP', 80],
+    ['KeyQ', 81],
+    ['KeyR', 82],
+    ['KeyS', 83],
+  ])
+
+  async function main () {
+    let canvas, ctx
+
+    const pressedKeys = new Set()
+
+    document.body.addEventListener('keydown', (ev) => pressedKeys.add(codeToIntMap.get(ev.code) || 0))
+    document.body.addEventListener('keyup', (ev) => pressedKeys.delete(codeToIntMap.get(ev.code) || 0))
+
+    const env = {
+      create_canvas (width, height) {
+        canvas = document.createElement('canvas')
+
+        canvas.width = width
+        canvas.height = height
+        document.body.appendChild(canvas)
+
+        ctx = canvas.getContext('2d')
+        ctx.fillStyle = '#000000'
+
+        return 0
+      },
+      set_fill_style (id, style) {
+        ctx.globalAlpha = (style >>> 24)
+        ctx.fillStyle = '#' + (style & 0xffffff).toString(16).padEnd(6, '0')
+      },
+      canvas_fill_rect (id, x, y, w, h) {
+        ctx.fillRect(x, y, w, h)
+      },
+      keyboard_is_pressed (key) {
+        return pressedKeys.has(key)
+      }
+    }
+
+    const response = await fetch('pong.wasm')
+    const bytes = await response.arrayBuffer()
+    const results = await WebAssembly.instantiate(bytes, { env })
+
+    const rust = results.instance.exports
+    const state = rust.init()
+
+    let lastTime = performance.now()
+
+    function draw (currentTime) {
+      const dt = currentTime - lastTime
+
+      // Draw current state
+      rust.draw(state)
+
+      // Compute next state
+      rust.step(state, dt)
+
+      // Set last time
+      lastTime = currentTime
+
+      // Wait for v-sync
+      window.requestAnimationFrame(draw)
+    }
+
+    window.requestAnimationFrame(draw)
+  }
+
+  main().catch(err => console.error(err))
+</script>
